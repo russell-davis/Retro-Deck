@@ -2,7 +2,10 @@
 
 *A programmable 8-key macro pad built on a [Raspberry Pi Pico](https://www.raspberrypi.com/products/raspberry-pi-pico/?variant=raspberry-pi-pico-w) with [CircuitPython](https://circuitpython.org/).*
 
-Based on DaveM's [Stream Cheap](https://www.thingiverse.com/thing:2822140), the retro deck adds a slot for a screen mount to be inserted and uses a Pico instead of an Arduino Pro Micro. Dave outlines the steps to build a stream cheap [on his website](https://www.partsnotincluded.com/diy-stream-deck-mini-macro-keyboard/).
+### Credit where credit is due
+I only adapted these designs. The real credit goes to the following people, without whom this project would not have been possible:
+- Based on DaveM's [Stream Cheap](https://www.thingiverse.com/thing:2822140), the retro deck adds a slot for a screen mount to be inserted and uses a Pico instead of an Arduino Pro Micro. Dave outlines the steps to build a stream cheap [on his website](https://www.partsnotincluded.com/diy-stream-deck-mini-macro-keyboard/).
+- The [Monitor](https://www.thingiverse.com/thing:3548757) was designed by TucksProjects.
 
 ## Goals I had for this project
 - 3D print 8 key macro pad
