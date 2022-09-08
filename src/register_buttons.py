@@ -9,11 +9,13 @@ def create_button(pin):
     return button
 
 
-def setup_buttons(config):
+def setup_buttons(config, mapping=""):
     buttons = []
-    for i in range(11, 15):
-        buttons.append(create_button(getattr(board, 'GP{}'.format(i))))
-    for i in range(20, 16, -1):
-        buttons.append(create_button(getattr(board, 'GP{}'.format(i))))
-
+    if not mapping:
+        for i in range(11, 15):
+            buttons.append(create_button(getattr(board, 'GP{}'.format(i))))
+        for i in range(20, 16, -1):
+            buttons.append(create_button(getattr(board, 'GP{}'.format(i))))
+    else:
+        print('mapping provided')
     return buttons
