@@ -14,9 +14,9 @@ def setup_buttons(config, mapping = ""):
     buttons = []
     if not mapping:
         print('no mapping provided')
-        for i in range(11, 15):
+        for i in range(10, 14):
             buttons.append(create_button(getattr(board, 'GP{}'.format(i))))
-        for i in range(20, 16, -1):
+        for i in range(21, 17, -1):
             buttons.append(create_button(getattr(board, 'GP{}'.format(i))))
     else:
         #If there is a mappings.json file on the device, parse it and use it.
