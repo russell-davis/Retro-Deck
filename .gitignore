@@ -1,4 +1,5 @@
 .vscode
 .idea/
 
+mappings.json
 .DS_Store

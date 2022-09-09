@@ -2,35 +2,35 @@
     "mappings": [
         {
             "Pin": 20,
-            "Button": 5
-        },
-        {
-            "Pin": 19,
-            "Button": 6
-        },
-        {
-            "Pin": 18,
-            "Button": 7
-        },
-        {
-            "Pin": 17,
-            "Button": 8
-        },
-        {
-            "Pin": 11,
             "Button": 1
         },
         {
-            "Pin": 12,
+            "Pin": 19,
             "Button": 2
         },
         {
-            "Pin": 13,
+            "Pin": 18,
             "Button": 3
         },
         {
-            "Pin": 14,
+            "Pin": 17,
             "Button": 4
+        },
+        {
+            "Pin": 11,
+            "Button": 5
+        },
+        {
+            "Pin": 12,
+            "Button": 6
+        },
+        {
+            "Pin": 13,
+            "Button": 7
+        },
+        {
+            "Pin": 14,
+            "Button": 8
         }
     ]
 }
