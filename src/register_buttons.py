@@ -10,7 +10,7 @@ def create_button(pin):
     return button
 
 
-def setup_buttons(config, mapping = ""):
+def setup_buttons(mapping = ""):
     buttons = []
     if not mapping:
         print('no mapping provided')
@@ -20,8 +20,8 @@ def setup_buttons(config, mapping = ""):
             buttons.append(create_button(getattr(board, 'GP{}'.format(i))))
     else:
         #If there is a mappings.json file on the device, parse it and use it.
-        # allows for easy config of pin/button mapping per device without chaning source
-        print('mapping provided')
+        # allows for easy config of pin/button mapping per device without changing source
+        print('loading provided mapping')
         jsonObject = json.loads(mapping)
         for val in jsonObject["mappings"]:
             print("Pin " + 'GP{}'.format(val["Pin"]) + " = Button " + str(val["Button"]))

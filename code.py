@@ -21,10 +21,6 @@ app_config = {
     "version": "v1.0.0",
 }
 
-
-## Setup the system
-
-
 # Setup oled display
 screen = Oled(app_config)
 screen.set_standby()
@@ -48,20 +44,16 @@ current_config = configs[0].config
 
 # If there is a mappings.json file in the device root (beside code.py)
 # it will be used to map the buttons. 
-data = ""
+button_map = ""
 if(file_exists('mappings.json')):
     with open('mappings.json', 'r') as file:
-        data = file.read()
+        button_map = file.read()
 
 # Start listening for button presses
-buttons = setup_buttons(current_config, data)
+buttons = setup_buttons(button_map)
 
 config_mode = False
 quit_app = False
-
-def handle_config_mode():
-    screen.set_confirm_selection("Profile", "Select")
-    # confirm
 
 def handle_button_press(button):
     global config_mode
