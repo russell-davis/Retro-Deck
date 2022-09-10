@@ -44,3 +44,8 @@ Likewise, bugs reports can be submitted [here](https://github.com/russell-davis/
   - Sure, I guess. I haven't tried it yet. I imagine you'll have some ghosted keys, as this codebase is not rock solid (yet).
 - **Your code is shit.**
   - I know. I'm working on it. Please contribute by starting [a feature request](https://github.com/russell-davis/Retro-Deck/issues/new?template=feature_request.md) to make it better
+
+# Configuration
+
+### mappings.json
+The easiest way to get started configuring your Retro Deck is to duplicate and rename the `example-mappings.json` copy to `mappings.json` and edit it to represent your wiring.
