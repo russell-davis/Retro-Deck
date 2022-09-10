@@ -1,0 +1,36 @@
+{
+    "mappings": [
+        {
+            "Pin": 20,
+            "Button": 1
+        },
+        {
+            "Pin": 19,
+            "Button": 2
+        },
+        {
+            "Pin": 18,
+            "Button": 3
+        },
+        {
+            "Pin": 17,
+            "Button": 4
+        },
+        {
+            "Pin": 11,
+            "Button": 5
+        },
+        {
+            "Pin": 12,
+            "Button": 6
+        },
+        {
+            "Pin": 13,
+            "Button": 7
+        },
+        {
+            "Pin": 14,
+            "Button": 8
+        }
+    ]
+}

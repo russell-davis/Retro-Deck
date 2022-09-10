@@ -3,6 +3,7 @@ from src.debug_buttons_functions import DebugButtonFunctions
 from src.obs_buttons import OBSConfig
 from src.oled import Oled
 from src.register_buttons import setup_buttons
+from src.fileUtilities import file_exists
 import usb_hid
 from adafruit_hid.keyboard import Keyboard
 import time
@@ -45,8 +46,15 @@ configs = [
 # current config
 current_config = configs[0].config
 
+# If there is a mappings.json file in the device root (beside code.py)
+# it will be used to map the buttons. 
+data = ""
+if(file_exists('mappings.json')):
+    with open('mappings.json', 'r') as file:
+        data = file.read()
+
 # Start listening for button presses
-buttons = setup_buttons(current_config)
+buttons = setup_buttons(current_config, data)
 
 config_mode = False
 quit_app = False
