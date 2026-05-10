@@ -1,0 +1,22 @@
+services:
+  dev:
+    image: oven/bun:latest
+    container_name: retro-deck-devcontainer
+    working_dir: /app
+    ports:
+      - '${HOST_PORT:-7842}:7842'
+    volumes:
+      - ..:/app
+      # Anonymous volume so the container's node_modules wins over the host's
+      - /app/node_modules
+    environment:
+      - HOST=0.0.0.0
+      - PORT=7842
+      # Frontend-only dev: skip serial (no Pico in container).
+      # Use the /api/fire endpoint or the test-fire UI to exercise dispatch.
+      - RETRO_DECK_DISABLE_SERIAL=1
+      # Keep config out of $HOME — write inside the bind mount so edits survive
+      # container teardown without polluting the host's ~/.config.
+      - RETRO_DECK_CONFIG_PATH=/app/.devcontainer/dev-config.json
+    command: sh -c "bun install && bun --hot ./server.ts"
+    restart: unless-stopped

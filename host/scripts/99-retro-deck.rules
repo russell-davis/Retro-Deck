@@ -1,0 +1,10 @@
+# Retro Deck - Raspberry Pi Pico running CircuitPython
+# Matches the specific board by serial so other Picos aren't affected.
+# Grants the `tty` group rw access and creates a stable /dev/retrodeck symlink.
+#
+# Install:
+#   sudo install -m 0644 99-retro-deck.rules /etc/udev/rules.d/99-retro-deck.rules
+#   sudo udevadm control --reload-rules
+#   sudo udevadm trigger --subsystem-match=tty
+#
+SUBSYSTEM=="tty", ATTRS{idVendor}=="239a", ATTRS{idProduct}=="80f4", ATTRS{serial}=="E6616407E35B1E28", GROUP="tty", MODE="0660", SYMLINK+="retrodeck"
