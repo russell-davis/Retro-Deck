@@ -46,7 +46,7 @@ if (process.env.RETRO_DECK_DISABLE_SERIAL === '1') {
 
     const binding = normalizeBinding(profile.buttons[key])
     const action = binding.press
-    if (action) dispatch(action, id)
+    if (action) dispatch(action, id, 'press')
     else console.log(`[daemon] btn${key} pressed — no action bound`)
   })
 }

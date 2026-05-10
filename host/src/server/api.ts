@@ -5,6 +5,9 @@ import {
   saveConfig,
   setActiveProfile,
   normalizeBinding,
+  createProfile,
+  renameProfile,
+  deleteProfile,
   type Config,
 } from './config'
 import { dispatch } from './dispatch'
@@ -43,8 +46,70 @@ export const api = new Hono()
     const action = binding[slot]
     if (!action) return c.json({ ok: false as const, error: `${slot} not bound` }, 404)
     console.log(`[api] test-fire btn${id} ${slot}: ${action.type}`)
-    dispatch(action, Number(id) || 0)
+    dispatch(action, Number(id) || 0, slot)
     return c.json({ ok: true as const })
+  })
+  .post('/profiles', async (c) => {
+    const body = (await c.req.json()) as { name?: unknown }
+    const name = typeof body.name === 'string' ? body.name.trim() : ''
+    if (!name || name.includes('/')) {
+      return c.json({ ok: false as const, error: 'invalid profile name' }, 400)
+    }
+    if (getConfig().profiles[name]) {
+      return c.json({ ok: false as const, error: `profile "${name}" already exists` }, 400)
+    }
+    try {
+      createProfile(name)
+      return c.json({ ok: true as const, profile: name })
+    } catch (e) {
+      return c.json({ ok: false as const, error: String(e) }, 400)
+    }
+  })
+  .put('/profiles/:name', async (c) => {
+    const oldName = c.req.param('name')
+    const body = (await c.req.json()) as { name?: unknown }
+    const newName = typeof body.name === 'string' ? body.name.trim() : ''
+    const cfg = getConfig()
+    if (!cfg.profiles[oldName]) {
+      return c.json({ ok: false as const, error: `profile "${oldName}" not found` }, 404)
+    }
+    if (!newName || newName.includes('/')) {
+      return c.json({ ok: false as const, error: 'invalid profile name' }, 400)
+    }
+    if (oldName === newName) {
+      return c.json({ ok: true as const, from: oldName, to: newName, note: 'no-op' })
+    }
+    if (cfg.profiles[newName]) {
+      return c.json({ ok: false as const, error: `profile "${newName}" already exists` }, 400)
+    }
+    try {
+      renameProfile(oldName, newName)
+      return c.json({ ok: true as const, from: oldName, to: newName })
+    } catch (e) {
+      return c.json({ ok: false as const, error: String(e) }, 400)
+    }
+  })
+  .delete('/profiles/:name', (c) => {
+    const name = c.req.param('name')
+    const cfg = getConfig()
+    if (!cfg.profiles[name]) {
+      return c.json({ ok: false as const, error: `profile "${name}" not found` }, 404)
+    }
+    if (Object.keys(cfg.profiles).length === 1) {
+      return c.json({ ok: false as const, error: 'cannot delete the last profile' }, 400)
+    }
+    if (cfg.activeProfile === name) {
+      return c.json(
+        { ok: false as const, error: 'cannot delete the active profile — switch first' },
+        400,
+      )
+    }
+    try {
+      deleteProfile(name)
+      return c.json({ ok: true as const, deleted: name })
+    } catch (e) {
+      return c.json({ ok: false as const, error: String(e) }, 400)
+    }
   })
   .post('/profile/:name', (c) => {
     const name = c.req.param('name')

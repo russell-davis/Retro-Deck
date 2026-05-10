@@ -98,3 +98,76 @@ export function saveConfig(config: Config) {
   current = config
   emit({ type: 'config.reload', config: current })
 }
+
+export function createProfile(name: string) {
+  if (!name || name.includes('/')) throw new Error('invalid profile name')
+  const config = getConfig()
+  if (config.profiles[name]) throw new Error(`profile "${name}" already exists`)
+  saveConfig({
+    ...config,
+    profiles: { ...config.profiles, [name]: { name, buttons: {} } },
+  })
+}
+
+export function renameProfile(from: string, to: string) {
+  if (!to || to.includes('/')) throw new Error('invalid profile name')
+  const config = getConfig()
+  if (!config.profiles[from]) throw new Error(`profile "${from}" not found`)
+  if (config.profiles[to]) throw new Error(`profile "${to}" already exists`)
+  if (from === to) return
+
+  const profiles: Config['profiles'] = {}
+  for (const [key, profile] of Object.entries(config.profiles)) {
+    const updatedButtons: Profile['buttons'] = {}
+    for (const [btnKey, raw] of Object.entries(profile.buttons)) {
+      const binding = normalizeBinding(raw)
+      const press =
+        binding.press?.type === 'profile' && binding.press.profile === from
+          ? { ...binding.press, profile: to }
+          : binding.press
+      const hold =
+        binding.hold?.type === 'profile' && binding.hold.profile === from
+          ? { ...binding.hold, profile: to }
+          : binding.hold
+      updatedButtons[btnKey] = { ...binding, press, hold }
+    }
+    const newKey = key === from ? to : key
+    profiles[newKey] = { ...profile, name: key === from ? to : profile.name, buttons: updatedButtons }
+  }
+
+  saveConfig({
+    ...config,
+    activeProfile: config.activeProfile === from ? to : config.activeProfile,
+    profiles,
+  })
+}
+
+export function deleteProfile(name: string) {
+  const config = getConfig()
+  if (!config.profiles[name]) throw new Error(`profile "${name}" not found`)
+  if (Object.keys(config.profiles).length === 1)
+    throw new Error('cannot delete the last profile')
+  if (config.activeProfile === name)
+    throw new Error('cannot delete the active profile — switch first')
+
+  const profiles: Config['profiles'] = {}
+  for (const [key, profile] of Object.entries(config.profiles)) {
+    if (key === name) continue
+    const updatedButtons: Profile['buttons'] = {}
+    for (const [btnKey, raw] of Object.entries(profile.buttons)) {
+      const binding = normalizeBinding(raw)
+      const press =
+        binding.press?.type === 'profile' && binding.press.profile === name
+          ? ({ type: 'noop' } as const)
+          : binding.press
+      const hold =
+        binding.hold?.type === 'profile' && binding.hold.profile === name
+          ? ({ type: 'noop' } as const)
+          : binding.hold
+      updatedButtons[btnKey] = { ...binding, press, hold }
+    }
+    profiles[key] = { ...profile, buttons: updatedButtons }
+  }
+
+  saveConfig({ ...config, profiles })
+}
