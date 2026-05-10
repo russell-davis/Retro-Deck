@@ -28,3 +28,61 @@ export function useActivateProfile() {
     },
   })
 }
+
+export function useCreateProfile() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (name: string) => {
+      const res = await fetch('/api/profiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      })
+      const body = (await res.json()) as { ok: boolean; error?: string }
+      if (!body.ok) throw new Error(body.error ?? `create failed: ${res.status}`)
+      return body
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['status'] })
+      qc.invalidateQueries({ queryKey: ['config'] })
+    },
+  })
+}
+
+export function useRenameProfile() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ from, to }: { from: string; to: string }) => {
+      const res = await fetch(`/api/profiles/${encodeURIComponent(from)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: to }),
+      })
+      const body = (await res.json()) as { ok: boolean; error?: string }
+      if (!body.ok) throw new Error(body.error ?? `rename failed: ${res.status}`)
+      return body
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['status'] })
+      qc.invalidateQueries({ queryKey: ['config'] })
+    },
+  })
+}
+
+export function useDeleteProfile() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (name: string) => {
+      const res = await fetch(`/api/profiles/${encodeURIComponent(name)}`, {
+        method: 'DELETE',
+      })
+      const body = (await res.json()) as { ok: boolean; error?: string }
+      if (!body.ok) throw new Error(body.error ?? `delete failed: ${res.status}`)
+      return body
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['status'] })
+      qc.invalidateQueries({ queryKey: ['config'] })
+    },
+  })
+}

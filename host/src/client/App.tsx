@@ -1,6 +1,7 @@
 import { ProfileSwitcher } from './components/ProfileSwitcher'
 import { ButtonGrid } from './components/ButtonGrid'
 import { EventLog } from './components/EventLog'
+import { Toasts } from './components/Toasts'
 import { useEventStream } from './queries/events'
 
 export function App() {
@@ -19,6 +20,8 @@ export function App() {
       <ButtonGrid events={events} />
 
       <EventLog events={events} connected={connected} />
+
+      <Toasts events={events} />
     </main>
   )
 }
