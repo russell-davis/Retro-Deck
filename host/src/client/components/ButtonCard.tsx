@@ -6,9 +6,10 @@ type Props = {
   id: string
   binding: ButtonBinding
   highlighted?: boolean
+  onEdit: () => void
 }
 
-export function ButtonCard({ id, binding, highlighted }: Props) {
+export function ButtonCard({ id, binding, highlighted, onEdit }: Props) {
   const fire = useFireButton()
   const press = binding.press
   const label = press?.label ?? `Button ${id}`
@@ -16,7 +17,18 @@ export function ButtonCard({ id, binding, highlighted }: Props) {
   const typeTag = press?.type ?? 'unbound'
 
   return (
-    <div className={`btn-card ${highlighted ? 'btn-card-hot' : ''} type-${typeTag}`}>
+    <div
+      className={`btn-card btn-card-clickable ${highlighted ? 'btn-card-hot' : ''} type-${typeTag}`}
+      onClick={onEdit}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onEdit()
+        }
+      }}
+    >
       <div className="btn-head">
         <span className="btn-id">#{id}</span>
         <span className={`btn-type type-${typeTag}`}>{typeTag}</span>
@@ -29,7 +41,10 @@ export function ButtonCard({ id, binding, highlighted }: Props) {
         type="button"
         className="btn-test"
         disabled={!press || fire.isPending}
-        onClick={() => fire.mutate({ id, slot: 'press' })}
+        onClick={(e) => {
+          e.stopPropagation()
+          fire.mutate({ id, slot: 'press' })
+        }}
       >
         {fire.isPending && fire.variables?.id === id ? 'firing…' : 'Test'}
       </button>
