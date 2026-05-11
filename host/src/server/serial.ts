@@ -1,9 +1,33 @@
 import { spawn } from 'node:child_process'
 import { createInterface } from 'node:readline'
+import { appendFileSync } from 'node:fs'
 import { $ } from 'bun'
-import { emit } from './events'
+import { emit, onEvent } from './events'
+import { getConfig } from './config'
 
 const PORT = process.env.RETRO_DECK_PORT ?? '/dev/retrodeck'
+
+let deviceConnected = false
+
+function sendSerial(msg: object) {
+  if (!deviceConnected) return
+  try {
+    appendFileSync(PORT, JSON.stringify(msg) + '\n')
+  } catch {}
+}
+
+onEvent((event) => {
+  const ev = event as { type: string; action?: string; ok?: boolean; label?: string; message?: string }
+  if (ev.type === 'device.connected') {
+    deviceConnected = true
+    sendSerial({ type: 'display', line1: getConfig().activeProfile, line2: 'ready' })
+  } else if (ev.type === 'device.disconnected') {
+    deviceConnected = false
+  } else if (ev.type === 'action.result' && ev.action !== 'noop') {
+    const line2 = (ev.label ?? ev.message ?? ev.action ?? '').slice(0, 20)
+    sendSerial({ type: 'display', line1: getConfig().activeProfile, line2 })
+  }
+})
 
 export type SerialMessage = Record<string, unknown> & { type: string }
 type MessageHandler = (msg: SerialMessage) => void
