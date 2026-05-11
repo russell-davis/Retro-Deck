@@ -43,8 +43,16 @@ function keysFromEvent(e: KeyboardEvent): string[] {
   return keys
 }
 
+function parseManualKeys(raw: string): string[] {
+  return raw
+    .split('+')
+    .map((s) => s.trim().toLowerCase())
+    .filter((s) => s.length > 0)
+}
+
 export function KeypressForm({ value, onChange, disabled }: Props) {
   const [capturing, setCapturing] = useState(false)
+  const [manualInput, setManualInput] = useState(value.keys.join(' + '))
 
   useEffect(() => {
     if (!capturing || disabled) return
@@ -73,6 +81,12 @@ export function KeypressForm({ value, onChange, disabled }: Props) {
   useEffect(() => {
     if (disabled) setCapturing(false)
   }, [disabled])
+
+  useEffect(() => {
+    if (!capturing) {
+      setManualInput(value.keys.join(' + '))
+    }
+  }, [value.keys, capturing])
 
   return (
     <>
@@ -120,6 +134,32 @@ export function KeypressForm({ value, onChange, disabled }: Props) {
               Clear
             </button>
           )}
+        </div>
+        <div className="key-manual-row">
+          <span className="key-manual-label">Or type:</span>
+          <input
+            type="text"
+            className="form-input key-manual-input"
+            placeholder="ctrl + shift + r"
+            value={manualInput}
+            disabled={disabled}
+            onChange={(e) => setManualInput(e.target.value)}
+            onBlur={() => {
+              const parsed = parseManualKeys(manualInput)
+              if (parsed.length > 0) {
+                onChange({ ...value, keys: parsed })
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                const parsed = parseManualKeys(manualInput)
+                if (parsed.length > 0) {
+                  onChange({ ...value, keys: parsed })
+                }
+              }
+            }}
+          />
         </div>
       </div>
     </>

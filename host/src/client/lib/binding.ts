@@ -11,6 +11,12 @@ export function actionSummary(action: Action | undefined): string {
   if (action.type === 'bash') return action.cmd
   if (action.type === 'keypress') return action.keys.join(' + ')
   if (action.type === 'profile') return `→ ${action.profile}`
+  const t = action.type as string
+  if (t === 'profile-cycle') {
+    const profiles = (action as Record<string, unknown>).profiles as string[]
+    if (profiles.length === 0) return '⟳ all profiles'
+    return '⟳ ' + profiles.join(' · ')
+  }
   return 'noop'
 }
 

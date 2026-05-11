@@ -4,6 +4,7 @@ import { BashForm } from './forms/BashForm'
 import { KeypressForm } from './forms/KeypressForm'
 import { ProfileForm } from './forms/ProfileForm'
 import { NoopForm } from './forms/NoopForm'
+import { CycleForm } from './forms/CycleForm'
 import type { Action, ButtonBinding, Config } from '../../server/config'
 
 type ActionType = Action['type']
@@ -21,12 +22,14 @@ const TABS: { type: ActionType; label: string }[] = [
   { type: 'keypress', label: 'Keypress' },
   { type: 'profile', label: 'Profile' },
   { type: 'noop', label: 'Noop' },
+  { type: 'profile-cycle', label: 'Cycle' },
 ]
 
 function defaultAction(type: ActionType, profiles: string[]): Action {
   if (type === 'bash') return { type: 'bash', cmd: '' }
   if (type === 'keypress') return { type: 'keypress', keys: [] }
   if (type === 'profile') return { type: 'profile', profile: profiles[0] ?? '' }
+  if (type === 'profile-cycle') return { type: 'profile-cycle', profiles: [] }
   return { type: 'noop' }
 }
 
@@ -52,17 +55,29 @@ function prepareAction(action: Action): Action {
       ? { type: 'profile', label, profile: action.profile }
       : { type: 'profile', profile: action.profile }
   }
+  if (action.type === 'profile-cycle') {
+    return label
+      ? { type: 'profile-cycle', label, profiles: action.profiles }
+      : { type: 'profile-cycle', profiles: action.profiles }
+  }
   return label ? { type: 'noop', label } : { type: 'noop' }
 }
 
 export function BindingDrawer({ buttonId, binding, config, profileName, onClose }: Props) {
   const profiles = Object.keys(config.profiles)
-  const initialType: ActionType = binding.press?.type ?? 'bash'
-  const initialAction: Action = binding.press ?? defaultAction(initialType, profiles)
 
-  const [actionType, setActionType] = useState<ActionType>(initialType)
-  const [action, setAction] = useState<Action>(initialAction)
+  const initialPressAction: Action = (binding.press as Action) ?? defaultAction('bash', profiles)
+  const initialHoldAction: Action = (binding.hold as Action) ?? defaultAction('noop', profiles)
+
+  const [slot, setSlot] = useState<'press' | 'hold'>('press')
+  const [slotActions, setSlotActions] = useState<{ press: Action; hold: Action }>({
+    press: initialPressAction,
+    hold: initialHoldAction,
+  })
   const save = useSaveBinding()
+
+  const action = slotActions[slot]
+  const actionType: ActionType = action.type as ActionType
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -72,15 +87,23 @@ export function BindingDrawer({ buttonId, binding, config, profileName, onClose 
     return () => document.removeEventListener('keydown', handler)
   }, [onClose])
 
+  function handleSlotChange(s: 'press' | 'hold') {
+    setSlot(s)
+  }
+
   function handleTabChange(type: ActionType) {
-    setActionType(type)
-    setAction(defaultAction(type, profiles))
+    setSlotActions((prev) => ({ ...prev, [slot]: defaultAction(type, profiles) }))
+  }
+
+  function handleActionChange(a: Action) {
+    setSlotActions((prev) => ({ ...prev, [slot]: a as Action }))
   }
 
   function handleSave() {
     const newBinding: ButtonBinding = {
       ...binding,
-      press: prepareAction(action),
+      press: prepareAction(slotActions.press),
+      hold: prepareAction(slotActions.hold),
     }
     save.mutate({ config, profileName, id: buttonId, binding: newBinding }, { onSuccess: onClose })
   }
@@ -99,6 +122,27 @@ export function BindingDrawer({ buttonId, binding, config, profileName, onClose 
         </div>
 
         <div className="drawer-body">
+          <div className="slot-toggle-row">
+            <div className="slot-toggle" role="tablist" aria-label="Binding slot">
+              {(['press', 'hold'] as const).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  role="tab"
+                  aria-selected={slot === s}
+                  className={`slot-tab${slot === s ? ' slot-tab-active' : ''}`}
+                  disabled={isPending}
+                  onClick={() => handleSlotChange(s)}
+                >
+                  {s === 'press' ? 'Press' : 'Hold'}
+                </button>
+              ))}
+            </div>
+            <span className="slot-hint" title="Hold = action fires after holding the button (threshold TBD)">
+              ?
+            </span>
+          </div>
+
           <div className="type-tabs" role="tablist">
             {TABS.map((tab) => (
               <button
@@ -118,21 +162,21 @@ export function BindingDrawer({ buttonId, binding, config, profileName, onClose 
           {actionType === 'bash' && (
             <BashForm
               value={action as Extract<Action, { type: 'bash' }>}
-              onChange={setAction}
+              onChange={handleActionChange}
               disabled={isPending}
             />
           )}
           {actionType === 'keypress' && (
             <KeypressForm
               value={action as Extract<Action, { type: 'keypress' }>}
-              onChange={setAction}
+              onChange={handleActionChange}
               disabled={isPending}
             />
           )}
           {actionType === 'profile' && (
             <ProfileForm
               value={action as Extract<Action, { type: 'profile' }>}
-              onChange={setAction}
+              onChange={handleActionChange}
               disabled={isPending}
               profiles={profiles}
             />
@@ -140,8 +184,16 @@ export function BindingDrawer({ buttonId, binding, config, profileName, onClose 
           {actionType === 'noop' && (
             <NoopForm
               value={action as Extract<Action, { type: 'noop' }>}
-              onChange={setAction}
+              onChange={handleActionChange}
               disabled={isPending}
+            />
+          )}
+          {actionType === 'profile-cycle' && (
+            <CycleForm
+              value={action as Extract<Action, { type: 'profile-cycle' }>}
+              onChange={handleActionChange}
+              disabled={isPending}
+              profiles={profiles}
             />
           )}
 
