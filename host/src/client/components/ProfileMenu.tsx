@@ -6,6 +6,7 @@ type View = 'menu' | 'rename' | 'delete'
 type Props = {
   name: string
   profiles: string[]
+  isActive: boolean
   onClose: () => void
 }
 
@@ -16,7 +17,7 @@ function validateName(next: string, current: string, profiles: string[]): string
   return null
 }
 
-export function ProfileMenu({ name, profiles, onClose }: Props) {
+export function ProfileMenu({ name, profiles, isActive, onClose }: Props) {
   const [view, setView] = useState<View>('menu')
   const [newName, setNewName] = useState(name)
   const rename = useRenameProfile()
@@ -164,8 +165,8 @@ export function ProfileMenu({ name, profiles, onClose }: Props) {
         type="button"
         className="profile-menu-item profile-menu-item-danger"
         onClick={() => setView('delete')}
-        disabled={isOnly}
-        title={isOnly ? 'Cannot delete the only profile' : undefined}
+        disabled={isOnly || isActive}
+        title={isActive ? 'Cannot delete the active profile' : isOnly ? 'Cannot delete the only profile' : undefined}
       >
         Delete
       </button>

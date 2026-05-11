@@ -6,15 +6,16 @@ import { NewProfileModal } from './NewProfileModal'
 export function ProfileSwitcher() {
   const status = useStatus()
   const activate = useActivateProfile()
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState<string | null>(null)
   const [newModalOpen, setNewModalOpen] = useState(false)
-  const kebabWrapRef = useRef<HTMLSpanElement>(null)
+  const kebabWrapRefs = useRef<Map<string, HTMLSpanElement>>(new Map())
 
   useEffect(() => {
     if (!menuOpen) return
     const handler = (e: MouseEvent) => {
-      if (kebabWrapRef.current && !kebabWrapRef.current.contains(e.target as Node)) {
-        setMenuOpen(false)
+      const ref = kebabWrapRefs.current.get(menuOpen)
+      if (ref && !ref.contains(e.target as Node)) {
+        setMenuOpen(null)
       }
     }
     document.addEventListener('mousedown', handler)
@@ -43,21 +44,28 @@ export function ProfileSwitcher() {
                 >
                   {name}
                 </button>
-                <span className="pill-kebab-wrap" ref={kebabWrapRef}>
+                <span
+                  className="pill-kebab-wrap"
+                  ref={(el) => {
+                    if (el) kebabWrapRefs.current.set(name, el)
+                    else kebabWrapRefs.current.delete(name)
+                  }}
+                >
                   <button
                     type="button"
                     className="pill-kebab"
-                    onClick={() => setMenuOpen((v) => !v)}
+                    onClick={() => setMenuOpen((v) => (v === name ? null : name))}
                     aria-label="Profile options"
-                    aria-expanded={menuOpen}
+                    aria-expanded={menuOpen === name}
                   >
                     ⋯
                   </button>
-                  {menuOpen && (
+                  {menuOpen === name && (
                     <ProfileMenu
                       name={name}
                       profiles={profiles}
-                      onClose={() => setMenuOpen(false)}
+                      isActive={true}
+                      onClose={() => setMenuOpen(null)}
                     />
                   )}
                 </span>
@@ -65,15 +73,41 @@ export function ProfileSwitcher() {
             )
           }
           return (
-            <button
-              key={name}
-              type="button"
-              className="pill"
-              disabled={activate.isPending}
-              onClick={() => activate.mutate(name)}
-            >
-              {name}
-            </button>
+            <span key={name} className="pill-wrapper">
+              <button
+                type="button"
+                className="pill"
+                disabled={activate.isPending}
+                onClick={() => activate.mutate(name)}
+              >
+                {name}
+              </button>
+              <span
+                className="pill-kebab-wrap"
+                ref={(el) => {
+                  if (el) kebabWrapRefs.current.set(name, el)
+                  else kebabWrapRefs.current.delete(name)
+                }}
+              >
+                <button
+                  type="button"
+                  className="pill-kebab"
+                  onClick={() => setMenuOpen((v) => (v === name ? null : name))}
+                  aria-label="Profile options"
+                  aria-expanded={menuOpen === name}
+                >
+                  ⋯
+                </button>
+                {menuOpen === name && (
+                  <ProfileMenu
+                    name={name}
+                    profiles={profiles}
+                    isActive={false}
+                    onClose={() => setMenuOpen(null)}
+                  />
+                )}
+              </span>
+            </span>
           )
         })}
         <button
