@@ -12,6 +12,11 @@ const ActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('keypress'), label: z.string().optional(), keys: z.array(z.string()) }),
   z.object({ type: z.literal('profile'), label: z.string().optional(), profile: z.string() }),
   z.object({ type: z.literal('noop'), label: z.string().optional() }),
+  z.object({
+    type: z.literal('profile-cycle'),
+    label: z.string().optional(),
+    profiles: z.array(z.string()).default([]),
+  }),
 ])
 
 const ButtonBindingSchema = z.object({

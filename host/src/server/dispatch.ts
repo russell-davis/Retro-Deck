@@ -201,5 +201,52 @@ export async function dispatch(action: Action, buttonId: number, slot: 'press' |
       })
       break
     }
+
+    case 'profile-cycle': {
+      const t0 = performance.now()
+      const cfg = getConfig()
+      const fromProfile = cfg.activeProfile
+
+      // Resolve profiles: use provided list or all profiles in config order
+      const allProfiles = Object.keys(cfg.profiles)
+      const resolved = action.profiles.length > 0 ? action.profiles : allProfiles
+
+      // Filter to only profiles that actually exist
+      const valid = resolved.filter(p => p in cfg.profiles)
+
+      if (valid.length < 2) {
+        console.warn(`[dispatch] btn${buttonId} profile-cycle: needs ≥2 valid profiles, got ${valid.length}`)
+        emit({
+          type: 'action.result',
+          buttonId,
+          slot,
+          action: 'profile-cycle',
+          ok: false,
+          label: action.label,
+          durationMs: Math.round(performance.now() - t0),
+          message: 'cycle needs ≥2 profiles',
+        })
+        break
+      }
+
+      // Find current profile index in valid list
+      const i = valid.indexOf(fromProfile)
+      const next = valid[(i + 1) % valid.length]
+
+      console.log(`[dispatch] btn${buttonId} profile-cycle: ${fromProfile} → ${next}`)
+      setActiveProfile(next)
+
+      emit({
+        type: 'action.result',
+        buttonId,
+        slot,
+        action: 'profile-cycle',
+        ok: true,
+        label: action.label,
+        durationMs: Math.round(performance.now() - t0),
+        message: `${fromProfile} → ${next}`,
+      })
+      break
+    }
   }
 }
