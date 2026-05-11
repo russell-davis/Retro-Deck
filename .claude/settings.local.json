@@ -1,0 +1,9 @@
+{
+  "enabledMcpjsonServers": [
+    "chrome-devtools-live"
+  ],
+  "disabledMcpjsonServers": [
+    "chrome-devtools",
+    "chrome-devtools-user"
+  ]
+}

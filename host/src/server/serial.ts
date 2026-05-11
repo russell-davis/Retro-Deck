@@ -1,0 +1,75 @@
+import { spawn } from 'node:child_process'
+import { createInterface } from 'node:readline'
+import { appendFileSync } from 'node:fs'
+import { $ } from 'bun'
+import { emit, onEvent } from './events'
+import { getConfig } from './config'
+
+const PORT = process.env.RETRO_DECK_PORT ?? '/dev/retrodeck'
+
+let deviceConnected = false
+
+function sendSerial(msg: object) {
+  if (!deviceConnected) return
+  try {
+    appendFileSync(PORT, JSON.stringify(msg) + '\n')
+  } catch {}
+}
+
+onEvent((event) => {
+  const ev = event as { type: string; action?: string; ok?: boolean; label?: string; message?: string }
+  if (ev.type === 'device.connected') {
+    deviceConnected = true
+    sendSerial({ type: 'display', line1: getConfig().activeProfile, line2: 'ready' })
+  } else if (ev.type === 'device.disconnected') {
+    deviceConnected = false
+  } else if (ev.type === 'action.result' && ev.action !== 'noop') {
+    const line2 = (ev.label ?? ev.message ?? ev.action ?? '').slice(0, 20)
+    sendSerial({ type: 'display', line1: getConfig().activeProfile, line2 })
+  }
+})
+
+export type SerialMessage = Record<string, unknown> & { type: string }
+type MessageHandler = (msg: SerialMessage) => void
+
+let stopped = false
+let activeChild: ReturnType<typeof spawn> | null = null
+
+export function stopSerial() {
+  stopped = true
+  activeChild?.kill('SIGTERM')
+}
+
+export async function startSerial(onMessage: MessageHandler) {
+  while (!stopped) {
+    try {
+      await $`stty -F ${PORT} raw -echo`.quiet()
+      console.log(`[serial] opened ${PORT}`)
+      emit({ type: 'device.connected', port: PORT })
+
+      const child = spawn('cat', [PORT], { stdio: ['ignore', 'pipe', 'ignore'] })
+      activeChild = child
+      const rl = createInterface({ input: child.stdout! })
+
+      for await (const line of rl) {
+        if (!line.trim()) continue
+        try {
+          const msg = JSON.parse(line)
+          if (msg?.type) {
+            emit(msg)
+            onMessage(msg as SerialMessage)
+          }
+        } catch {}
+      }
+
+      activeChild = null
+      console.log('[serial] stream ended — reconnecting in 2s')
+      emit({ type: 'device.disconnected' })
+    } catch (e) {
+      activeChild = null
+      console.error('[serial] error:', (e as Error).message)
+      emit({ type: 'device.disconnected', error: String(e) })
+    }
+    if (!stopped) await Bun.sleep(2000)
+  }
+}

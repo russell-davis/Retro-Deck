@@ -1,0 +1,28 @@
+{
+  "name": "retro-deck-host",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --hot ./server.ts",
+    "start": "bun ./server.ts",
+    "typecheck": "tsc --noEmit",
+    "daemon:start": "bun scripts/daemon-ctl.ts start",
+    "daemon:stop": "bun scripts/daemon-ctl.ts stop",
+    "daemon:restart": "bun scripts/daemon-ctl.ts restart",
+    "daemon:status": "bun scripts/daemon-ctl.ts status",
+    "daemon:logs": "bun scripts/daemon-ctl.ts logs"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.100.0",
+    "hono": "^4.7.7",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "zod": "^3.24.3"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/bun": "latest",
+    "typescript": "^5.6.0"
+  }
+}

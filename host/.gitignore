@@ -1,0 +1,4 @@
+node_modules/
+.devcontainer/.env
+.devcontainer/dev-config.json
+*.log
