@@ -27,6 +27,10 @@ PINS = [board.GP10, board.GP11, board.GP12, board.GP13,
         board.GP21, board.GP20, board.GP19, board.GP18]
 IDS   = [1, 2, 3, 4, 5, 6, 7, 8]
 
+lbl_profile = None
+lbl_action = None
+display_ok = False
+
 try:
     displayio.release_displays()
     send({'step': 'displays_released'})
@@ -41,12 +45,18 @@ try:
     send({'step': 'ssd1306_ok'})
 
     group = displayio.Group()
-    group.append(label.Label(terminalio.FONT, text="V2 ready", x=4, y=8))
-    group.append(label.Label(terminalio.FONT, text="press a button", x=4, y=24))
+    lbl_profile = label.Label(terminalio.FONT, text="V2 ready", x=4, y=8)
+    lbl_action = label.Label(terminalio.FONT, text="press a button", x=4, y=24)
+    group.append(lbl_profile)
+    group.append(lbl_action)
     display.show(group)
     send({'step': 'display_shown'})
 
+    display_ok = True
 except Exception as e:
+    lbl_profile = None
+    lbl_action = None
+    display_ok = False
     send({'step': 'display_error', 'err': str(e)})
 
 try:
@@ -80,6 +90,11 @@ while True:
                 msg = json.loads(line)
                 if msg.get('type') == 'ping':
                     send({'type': 'pong', 'id': msg.get('id')})
+                elif msg.get('type') == 'display' and display_ok:
+                    if 'line1' in msg:
+                        lbl_profile.text = str(msg['line1'])[:20]
+                    if 'line2' in msg:
+                        lbl_action.text = str(msg['line2'])[:20]
             except Exception:
                 pass
 
