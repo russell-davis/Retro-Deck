@@ -4,8 +4,11 @@ import { appendFileSync } from 'node:fs'
 import { $ } from 'bun'
 import { emit, onEvent } from './events'
 import { getConfig } from './config'
+import { resolveDataPort } from './port'
 
-const PORT = process.env.RETRO_DECK_PORT ?? '/dev/retrodeck'
+// Resolved (and re-resolved) per connection in startSerial; the data-port device
+// path can change when the Pico re-enumerates after a reload.
+let PORT = process.env.RETRO_DECK_PORT ?? '/dev/retrodeck'
 
 let deviceConnected = false
 
@@ -43,6 +46,7 @@ export function stopSerial() {
 export async function startSerial(onMessage: MessageHandler) {
   while (!stopped) {
     try {
+      PORT = await resolveDataPort()
       await $`stty -F ${PORT} raw -echo`.quiet()
       console.log(`[serial] opened ${PORT}`)
       emit({ type: 'device.connected', port: PORT })

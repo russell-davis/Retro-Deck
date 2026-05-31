@@ -7,4 +7,8 @@
 #   sudo udevadm control --reload-rules
 #   sudo udevadm trigger --subsystem-match=tty
 #
-SUBSYSTEM=="tty", ATTRS{idVendor}=="239a", ATTRS{idProduct}=="80f4", ATTRS{serial}=="E6616407E35B1E28", GROUP="tty", MODE="0660", SYMLINK+="retrodeck"
+# ID_USB_INTERFACE_NUM=="02" pins the symlink to the CDC *data* interface. The
+# board exposes two CDC ports sharing this serial — 00 (console/REPL) and 02
+# (data). Without the interface match the rule fires for both and /dev/retrodeck
+# lands on whichever enumerated last, often the console port (no protocol data).
+SUBSYSTEM=="tty", ATTRS{idVendor}=="239a", ATTRS{idProduct}=="80f4", ATTRS{serial}=="E6616407E35B1E28", ENV{ID_USB_INTERFACE_NUM}=="02", GROUP="tty", MODE="0660", SYMLINK+="retrodeck"
