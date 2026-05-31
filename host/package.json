@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "bun --hot ./server.ts",
     "start": "bun ./server.ts",
+    "deploy": "bun scripts/deploy.ts",
     "typecheck": "tsc --noEmit",
     "daemon:start": "bun scripts/daemon-ctl.ts start",
     "daemon:stop": "bun scripts/daemon-ctl.ts stop",
