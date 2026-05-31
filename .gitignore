@@ -3,3 +3,6 @@
 
 mappings.json
 .DS_Store
+# Python bytecode (from firmware syntax checks)
+__pycache__/
+*.pyc
