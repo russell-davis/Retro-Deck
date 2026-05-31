@@ -66,7 +66,10 @@ export class DiagnosticsCore {
       this._lastSeq = msg.seq
     }
 
-    if (typeof msg.t === 'number') {
+    // Only device-originated messages carry a device-monotonic `t`. The daemon's
+    // SSE keepalive ({type:'ping', t:Date.now()}) uses a host clock, so mixing it
+    // into the offset series would wreck the jitter metric.
+    if (typeof msg.t === 'number' && msg.type !== 'ping') {
       this._offsets.push(arrivedAt - (msg.t as number))
     }
 
