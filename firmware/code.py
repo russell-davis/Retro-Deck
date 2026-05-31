@@ -6,8 +6,17 @@ import json
 serial = usb_cdc.data
 serial.timeout = 0
 
+VERSION = '2.1.0-diag'
+
+_seq = 0
+
 
 def send(msg):
+    # Stamp every outbound message with a monotonic sequence number so the host
+    # can detect dropped (seq gap) and duplicated (seq repeat) frames.
+    global _seq
+    _seq += 1
+    msg['seq'] = _seq
     serial.write((json.dumps(msg) + '\n').encode('utf-8'))
 
 
@@ -25,7 +34,9 @@ send({'step': 'display_libs_imported'})
 
 PINS = [board.GP10, board.GP11, board.GP12, board.GP13,
         board.GP21, board.GP20, board.GP19, board.GP18]
-IDS   = [1, 2, 3, 4, 5, 6, 7, 8]
+IDS = [1, 2, 3, 4, 5, 6, 7, 8]
+
+DEFAULT_DEBOUNCE_MS = 20
 
 lbl_profile = None
 lbl_action = None
@@ -59,28 +70,71 @@ except Exception as e:
     display_ok = False
     send({'step': 'display_error', 'err': str(e)})
 
+debounce_ms = DEFAULT_DEBOUNCE_MS
+keys = None
+
+
+def make_keys(ms):
+    return keypad.Keys(PINS, value_when_pressed=False, pull=True, interval=ms / 1000)
+
+
 try:
-    keys = keypad.Keys(PINS, value_when_pressed=False, pull=True)
+    keys = make_keys(debounce_ms)
     send({'step': 'keys_ok'})
 except Exception as e:
     send({'step': 'keys_error', 'err': str(e)})
 
-send({'type': 'ready', 'version': '2.0.0-dev'})
+send({
+    'type': 'ready',
+    'version': VERSION,
+    'buttons': len(IDS),
+    'pins': ['GP10', 'GP11', 'GP12', 'GP13', 'GP21', 'GP20', 'GP19', 'GP18'],
+    'debounce_ms': debounce_ms,
+})
 
 held = set()
 buf = b''
+heartbeat_ms = 0          # 0 = off; host enables it for diagnostics
+last_tick = time.monotonic()
+
+
+def apply_config(msg):
+    global heartbeat_ms, debounce_ms, keys
+    if 'heartbeat_ms' in msg:
+        try:
+            heartbeat_ms = int(msg['heartbeat_ms'])
+        except Exception:
+            pass
+    if 'debounce_ms' in msg:
+        try:
+            new_ms = int(msg['debounce_ms'])
+            if keys is not None:
+                keys.deinit()
+            debounce_ms = new_ms
+            keys = make_keys(debounce_ms)
+        except Exception as e:
+            send({'type': 'error', 'where': 'config.debounce', 'err': str(e)})
+    send({'type': 'config.ok', 'heartbeat_ms': heartbeat_ms, 'debounce_ms': debounce_ms})
+
+
 while True:
-    ev = keys.events.get()
-    if ev:
-        t = int(time.monotonic() * 1000)
-        btn = IDS[ev.key_number]
-        if ev.pressed:
-            others = list(held)
-            held.add(btn)
-            send({'type': 'button.press', 'id': btn, 'held': others, 't': t})
-        else:
-            held.discard(btn)
-            send({'type': 'button.release', 'id': btn, 't': t})
+    # Drain the ENTIRE keypad queue each loop. The old firmware took one event
+    # per 10 ms tick, serializing near-simultaneous presses ~10 ms apart and
+    # corrupting chord timing. Here every queued event is emitted immediately.
+    if keys is not None:
+        while True:
+            ev = keys.events.get()
+            if ev is None:
+                break
+            t = int(time.monotonic() * 1000)
+            btn = IDS[ev.key_number]
+            if ev.pressed:
+                others = list(held)
+                held.add(btn)
+                send({'type': 'button.press', 'id': btn, 'held': others, 't': t})
+            else:
+                held.discard(btn)
+                send({'type': 'button.release', 'id': btn, 't': t})
 
     if serial.in_waiting:
         buf += serial.read(serial.in_waiting)
@@ -88,14 +142,25 @@ while True:
             line, buf = buf.split(b'\n', 1)
             try:
                 msg = json.loads(line)
-                if msg.get('type') == 'ping':
-                    send({'type': 'pong', 'id': msg.get('id')})
-                elif msg.get('type') == 'display' and display_ok:
+                mtype = msg.get('type')
+                if mtype == 'ping':
+                    # Echo the host timestamp (ht) so the host can compute RTT.
+                    send({'type': 'pong', 'id': msg.get('id'), 'ht': msg.get('ht'),
+                          't': int(time.monotonic() * 1000)})
+                elif mtype == 'display' and display_ok:
                     if 'line1' in msg:
                         lbl_profile.text = str(msg['line1'])[:20]
                     if 'line2' in msg:
                         lbl_action.text = str(msg['line2'])[:20]
+                elif mtype == 'config':
+                    apply_config(msg)
             except Exception:
                 pass
 
-    time.sleep(0.01)
+    if heartbeat_ms:
+        now = time.monotonic()
+        if (now - last_tick) * 1000 >= heartbeat_ms:
+            last_tick = now
+            send({'type': 'tick', 't': int(now * 1000)})
+
+    time.sleep(0.001)
