@@ -33,14 +33,25 @@ const ProfileSchema = z.object({
   buttons: z.record(z.string(), RawButtonSchema),
 })
 
+const INPUT_DEFAULTS = { holdMs: 500, doubleTapMs: 250, chordWindowMs: 40, debounceFloorMs: 20 }
+
+const InputConfigSchema = z.object({
+  holdMs: z.number().default(INPUT_DEFAULTS.holdMs),
+  doubleTapMs: z.number().default(INPUT_DEFAULTS.doubleTapMs),
+  chordWindowMs: z.number().default(INPUT_DEFAULTS.chordWindowMs),
+  debounceFloorMs: z.number().default(INPUT_DEFAULTS.debounceFloorMs),
+})
+
 const ConfigSchema = z.object({
   activeProfile: z.string(),
   profiles: z.record(z.string(), ProfileSchema),
+  input: InputConfigSchema.default(INPUT_DEFAULTS),
 })
 
 export type Action = z.infer<typeof ActionSchema>
 export type ButtonBinding = z.infer<typeof ButtonBindingSchema>
 export type Profile = z.infer<typeof ProfileSchema>
+export type InputConfig = z.infer<typeof InputConfigSchema>
 export type Config = z.infer<typeof ConfigSchema>
 
 function isAction(value: unknown): value is Action {
@@ -56,6 +67,7 @@ export function normalizeBinding(raw: Action | ButtonBinding | undefined): Butto
 const DEFAULT_CONFIG: Config = {
   activeProfile: 'default',
   profiles: { default: { name: 'Default', buttons: {} } },
+  input: { holdMs: 500, doubleTapMs: 250, chordWindowMs: 40, debounceFloorMs: 20 },
 }
 
 function load(): Config {

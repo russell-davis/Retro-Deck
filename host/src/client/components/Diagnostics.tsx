@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useEventStream } from '../queries/events'
+import { useConfig } from '../queries/config'
 import { DiagnosticsCore } from '../../server/diagnostics'
 import type { FirmwareMsg, DiagSummary } from '../../server/diagnostics'
+import type { InputConfig } from '../../server/config'
 
 type TimelineRow = {
   id: number
@@ -28,6 +30,115 @@ function StatCard({ label, value, warn }: { label: string; value: string; warn?:
     <div className={`stat-card${warn ? ' stat-card-warn' : ''}`}>
       <div className="stat-label">{label}</div>
       <div className="stat-value">{value}</div>
+    </div>
+  )
+}
+
+type ThresholdField = { key: keyof InputConfig; label: string; unit: string }
+
+const THRESHOLD_FIELDS: ThresholdField[] = [
+  { key: 'holdMs', label: 'Hold', unit: 'ms' },
+  { key: 'doubleTapMs', label: 'Double-tap gap', unit: 'ms' },
+  { key: 'chordWindowMs', label: 'Chord window', unit: 'ms' },
+  { key: 'debounceFloorMs', label: 'Debounce floor', unit: 'ms' },
+]
+
+function ThresholdsPanel() {
+  const { data: config } = useConfig()
+  const [draft, setDraft] = useState<InputConfig | null>(null)
+  const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const values = draft ?? config?.input ?? { holdMs: 500, doubleTapMs: 250, chordWindowMs: 40, debounceFloorMs: 20 }
+
+  function handleChange(key: keyof InputConfig, raw: string) {
+    const n = parseInt(raw, 10)
+    if (!isNaN(n)) {
+      setDraft({ ...values, [key]: n })
+      setSaved(false)
+    }
+  }
+
+  async function handleSave() {
+    if (!config || !draft) return
+    setSaving(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...config, input: draft }),
+      })
+      const body = (await res.json()) as { ok: boolean; error?: string }
+      if (!body.ok) throw new Error(body.error ?? `save failed: ${res.status}`)
+      setSaved(true)
+      setDraft(null)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (e) {
+      setError(String(e))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <section className='thresholds-panel'>
+      <h2 className='thresholds-title'>Input thresholds</h2>
+      <div className='thresholds-grid'>
+        {THRESHOLD_FIELDS.map(({ key, label, unit }) => (
+          <div key={key} className='threshold-field'>
+            <span className='form-label'>{label} ({unit})</span>
+            <input
+              className='threshold-input'
+              type='number'
+              min={1}
+              value={values[key]}
+              onChange={e => handleChange(key, e.target.value)}
+            />
+          </div>
+        ))}
+      </div>
+      <div className='thresholds-actions'>
+        <button
+          className='btn-primary btn-sm'
+          onClick={handleSave}
+          disabled={saving || !draft}
+        >
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+        {saved && <span className='thresholds-saved'>Saved</span>}
+        {error && <span className='error'>{error}</span>}
+      </div>
+    </section>
+  )
+}
+
+function PanicButton() {
+  const [status, setStatus] = useState<'idle' | 'ok' | 'err'>('idle')
+
+  async function handlePanic() {
+    setStatus('idle')
+    try {
+      const res = await fetch('/api/panic', { method: 'POST' })
+      const body = (await res.json()) as { ok: boolean }
+      setStatus(body.ok ? 'ok' : 'err')
+    } catch {
+      setStatus('err')
+    }
+    setTimeout(() => setStatus('idle'), 2000)
+  }
+
+  return (
+    <div className='panic-section'>
+      <span className='panic-label'>Stuck modifier keys?</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        {status === 'ok' && <span className='panic-ok'>Released</span>}
+        {status === 'err' && <span className='error'>Failed</span>}
+        <button className='btn-danger btn-sm' onClick={handlePanic}>
+          Release all keys
+        </button>
+      </div>
     </div>
   )
 }
@@ -123,6 +234,9 @@ export function Diagnostics() {
           </span>
         </div>
       )}
+
+      <ThresholdsPanel />
+      <PanicButton />
 
       <section className="card diag-timeline-card">
         <div className="event-log-head">

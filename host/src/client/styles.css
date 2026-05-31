@@ -1004,3 +1004,84 @@ section.card,
 .diag-meta {
   color: var(--dim);
 }
+
+/* Input thresholds panel */
+.thresholds-panel {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--card);
+  padding: 1rem;
+  display: grid;
+  gap: 0.875rem;
+}
+
+.thresholds-title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.thresholds-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: 0.75rem;
+}
+
+.threshold-field {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.threshold-input {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  color: var(--fg);
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.875rem;
+  padding: 0.375rem 0.5rem;
+  width: 100%;
+  outline: none;
+}
+.threshold-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+}
+
+.thresholds-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.thresholds-saved {
+  font-size: 0.8125rem;
+  color: var(--type-bash);
+}
+
+/* Panic section */
+.panic-section {
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  border-radius: 0.5rem;
+  background: rgba(248, 113, 113, 0.04);
+  padding: 0.875rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.panic-label {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.panic-ok {
+  font-size: 0.8125rem;
+  color: var(--type-bash);
+}
