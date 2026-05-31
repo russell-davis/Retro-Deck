@@ -2,6 +2,7 @@ import index from './index.html'
 import { api } from './src/server/api'
 import { startSerial, stopSerial } from './src/server/serial'
 import { dispatch } from './src/server/dispatch'
+import { releaseAllModifiers } from './src/server/keyboard'
 import { getConfig, normalizeBinding } from './src/server/config'
 
 const port = Number(process.env.PORT ?? 7842)
@@ -22,6 +23,10 @@ const server = Bun.serve({
 })
 
 console.log(`[daemon] http://${server.hostname}:${server.port}`)
+
+// Clear any modifier the kernel still thinks is held from a previously-crashed
+// run, so we never inherit a stuck-key "hijack" on startup.
+releaseAllModifiers().catch(() => {})
 
 if (process.env.RETRO_DECK_DISABLE_SERIAL === '1') {
   console.log('[daemon] serial disabled (RETRO_DECK_DISABLE_SERIAL=1)')

@@ -11,7 +11,8 @@ import {
   type Config,
 } from './config'
 import { dispatch } from './dispatch'
-import { onEvent } from './events'
+import { releaseAllModifiers } from './keyboard'
+import { emit, onEvent } from './events'
 
 export const api = new Hono()
   .basePath('/api')
@@ -110,6 +111,12 @@ export const api = new Hono()
     } catch (e) {
       return c.json({ ok: false as const, error: String(e) }, 400)
     }
+  })
+  .post('/panic', async (c) => {
+    const r = await releaseAllModifiers()
+    console.log(`[api] panic: release all modifiers (exit ${r.exitCode})`)
+    emit({ type: 'panic', ok: r.ok, t: Date.now() })
+    return c.json({ ok: r.ok, exitCode: r.exitCode })
   })
   .post('/profile/:name', (c) => {
     const name = c.req.param('name')

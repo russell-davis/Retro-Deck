@@ -1,6 +1,7 @@
 import type { Action } from './config'
 import { setActiveProfile, getConfig } from './config'
-import { lookupToken, isModifier } from './keymap'
+import { lookupToken } from './keymap'
+import { emitChord } from './keyboard'
 import { emit } from './events'
 
 export async function dispatch(action: Action, buttonId: number, slot: 'press' | 'hold') {
@@ -69,80 +70,31 @@ export async function dispatch(action: Action, buttonId: number, slot: 'press' |
         break
       }
 
-      const modifiers = codes.filter(c => isModifier(c))
-      const nonModifiers = codes.filter(c => !isModifier(c))
-      const ordered = [...modifiers, ...nonModifiers]
-
-      const pressArgs = ordered.map(c => `${c}:1`)
-      const releaseArgs = [...ordered].reverse().map(c => `${c}:0`)
-
-      console.log(
-        `[dispatch] btn${buttonId} keypress: ydotool key ${[...pressArgs, ...releaseArgs].join(' ')}`,
-      )
-
-      const pressProc = Bun.spawn(['ydotool', 'key', ...pressArgs], {
-        stdout: 'pipe',
-        stderr: 'pipe',
-      })
-      const [pressExitRaw, pressStderr] = await Promise.all([
-        pressProc.exited,
-        new Response(pressProc.stderr).text(),
-      ])
-      const pressExit = typeof pressExitRaw === 'number' ? pressExitRaw : -1
-
-      if (pressExit !== 0) {
-        const stderrTail = pressStderr.slice(-200)
-        console.error(
-          `[dispatch] btn${buttonId} keypress: ydotool press failed (exit ${pressExit}): ${stderrTail.trim()}`,
-        )
-        emit({
-          type: 'action.result',
-          buttonId,
-          slot,
-          action: 'keypress',
-          ok: false,
-          label: action.label,
-          durationMs: Math.round(performance.now() - t0),
-          exitCode: pressExit,
-          stderrTail: stderrTail || undefined,
-          message: `ydotool press failed (exit ${pressExit})`,
-        })
-        break
-      }
-
-      await new Promise<void>(resolve => setTimeout(resolve, 30))
-
-      const releaseProc = Bun.spawn(['ydotool', 'key', ...releaseArgs], {
-        stdout: 'pipe',
-        stderr: 'pipe',
-      })
-      const [releaseExitRaw, releaseStderr] = await Promise.all([
-        releaseProc.exited,
-        new Response(releaseProc.stderr).text(),
-      ])
-      const releaseExit = typeof releaseExitRaw === 'number' ? releaseExitRaw : -1
-
-      if (releaseExit !== 0) {
-        const stderrTail = releaseStderr.slice(-200)
-        console.error(
-          `[dispatch] btn${buttonId} keypress: ydotool release failed (exit ${releaseExit}): ${stderrTail.trim()}`,
-        )
-        emit({
-          type: 'action.result',
-          buttonId,
-          slot,
-          action: 'keypress',
-          ok: false,
-          label: action.label,
-          durationMs: Math.round(performance.now() - t0),
-          exitCode: releaseExit,
-          stderrTail: stderrTail || undefined,
-          message: `ydotool release failed (exit ${releaseExit})`,
-        })
-        break
-      }
-
+      // Single atomic ydotool invocation: press + release happen in one process
+      // so a modifier can never be left stuck "down" between two processes.
+      const res = await emitChord(codes)
       const keysStr = action.keys.map(k => k.toLowerCase()).join('+')
+      console.log(`[dispatch] btn${buttonId} keypress: ${keysStr} (exit ${res.exitCode})`)
+
+      if (!res.ok) {
+        console.error(
+          `[dispatch] btn${buttonId} keypress: ydotool failed (exit ${res.exitCode}): ${res.stderr.trim()}`,
+        )
+        emit({
+          type: 'action.result',
+          buttonId,
+          slot,
+          action: 'keypress',
+          ok: false,
+          label: action.label,
+          durationMs: Math.round(performance.now() - t0),
+          exitCode: res.exitCode,
+          stderrTail: res.stderr || undefined,
+          message: `ydotool failed (exit ${res.exitCode})`,
+        })
+        break
+      }
+
       emit({
         type: 'action.result',
         buttonId,
