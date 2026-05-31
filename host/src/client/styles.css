@@ -871,3 +871,136 @@ section.card,
   font-size: 0.8125rem;
   font-family: ui-monospace, SFMono-Regular, monospace;
 }
+
+/* View tab switcher */
+.view-tabs {
+  display: flex;
+  gap: 0.375rem;
+}
+
+/* Diagnostics panel */
+.diag-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.diag-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.diag-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.diag-title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+/* Stat cards grid */
+.diag-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: 0.75rem;
+}
+
+.stat-card {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--card);
+  padding: 0.75rem 1rem;
+  display: grid;
+  gap: 0.375rem;
+}
+
+.stat-card-warn {
+  border-color: var(--error);
+}
+
+.stat-label {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.stat-value {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+/* Inline detail rows (latency, RTT breakdowns) */
+.diag-row-detail {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--card);
+}
+
+.diag-detail-val {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.75rem;
+  color: var(--fg);
+}
+
+/* Event timeline */
+.diag-timeline-card {
+  margin: 0;
+}
+
+.diag-count {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.6875rem;
+  color: var(--dim);
+}
+
+.diag-timeline {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.75rem;
+  max-height: 20rem;
+  overflow-y: auto;
+}
+
+.diag-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.diag-type-chip {
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  background: var(--type-unbound);
+  color: var(--fg);
+}
+
+.diag-type-button-press   { background: var(--type-keypress); color: var(--bg); }
+.diag-type-button-release { background: var(--type-noop); color: var(--muted); }
+.diag-type-pong           { background: var(--type-bash); color: var(--bg); }
+.diag-type-tick           { background: var(--border); color: var(--dim); }
+
+.diag-meta {
+  color: var(--dim);
+}
