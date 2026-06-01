@@ -100,7 +100,9 @@ export class DiagnosticsCore {
     }
 
     if (msg.type === 'pong' && typeof msg.ht === 'number') {
-      this._rtts.push(arrivedAt - (msg.ht as number))
+      // Prefer the daemon-stamped rtt (measured at serial-read, free of SSE/render
+      // delay). Fall back to arrivedAt-ht for the CLI's direct-serial path.
+      this._rtts.push(typeof msg.rtt === 'number' ? (msg.rtt as number) : arrivedAt - (msg.ht as number))
     }
   }
 

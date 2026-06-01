@@ -38,8 +38,25 @@ type MessageHandler = (msg: SerialMessage) => void
 let stopped = false
 let activeChild: ReturnType<typeof spawn> | null = null
 
+// Periodically ping the device so the diagnostics UI can show live round-trip
+// latency. The firmware echoes our `ht` back in its pong; the host measures RTT
+// from it. Quiet otherwise — one small frame per second.
+let pingTimer: ReturnType<typeof setInterval> | null = null
+let pingId = 0
+
+function startPing() {
+  if (pingTimer) return
+  pingTimer = setInterval(() => {
+    if (deviceConnected) sendSerial({ type: 'ping', id: ++pingId, ht: Date.now() })
+  }, 1000)
+}
+
 export function stopSerial() {
   stopped = true
+  if (pingTimer) {
+    clearInterval(pingTimer)
+    pingTimer = null
+  }
   activeChild?.kill('SIGTERM')
 }
 
@@ -50,6 +67,7 @@ export async function startSerial(onMessage: MessageHandler) {
       await $`stty -F ${PORT} raw -echo`.quiet()
       console.log(`[serial] opened ${PORT}`)
       emit({ type: 'device.connected', port: PORT })
+      startPing()
 
       const child = spawn('cat', [PORT], { stdio: ['ignore', 'pipe', 'ignore'] })
       activeChild = child
@@ -60,6 +78,11 @@ export async function startSerial(onMessage: MessageHandler) {
         try {
           const msg = JSON.parse(line)
           if (msg?.type) {
+            // Stamp true round-trip latency at serial-read time. Measuring here
+            // (not in the browser) keeps RTT free of SSE/render delay.
+            if (msg.type === 'pong' && typeof msg.ht === 'number') {
+              msg.rtt = Date.now() - msg.ht
+            }
             emit(msg)
             onMessage(msg as SerialMessage)
           }

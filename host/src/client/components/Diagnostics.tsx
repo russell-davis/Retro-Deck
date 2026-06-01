@@ -164,7 +164,13 @@ export function Diagnostics() {
       changed = true
       if (TIMELINE_TYPES.has(msg.type)) {
         const rtt =
-          msg.type === 'pong' && typeof msg.ht === 'number' ? e.t - (msg.ht as number) : undefined
+          msg.type === 'pong'
+            ? typeof msg.rtt === 'number'
+              ? (msg.rtt as number)
+              : typeof msg.ht === 'number'
+                ? e.t - (msg.ht as number)
+                : undefined
+            : undefined
         newRows.push({
           id: ++rowCounter.current,
           hostT: e.t,
@@ -219,9 +225,9 @@ export function Diagnostics() {
 
       {s.latency && (
         <div className="diag-row-detail">
-          <span className="stat-label">Latency offset</span>
+          <span className="stat-label">Delivery jitter</span>
           <span className="diag-detail-val">
-            min {s.latency.min}ms · avg {s.latency.avg}ms · max {s.latency.max}ms
+            {s.latency.jitter}ms spread over {s.latency.count} frames
           </span>
         </div>
       )}
